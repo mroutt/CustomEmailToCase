@@ -4,7 +4,7 @@ private class ClaimInfoEmailHandlerTests {
     @isTest
     static void canLinkAttachmentToCase() {
         
-        String subject = 'canLinkToCaseTest';
+        String subject = 'canLinkToCaseTest 88888888';
         
         Messaging.InboundEmail email = new Messaging.InboundEmail();
         Messaging.InboundEnvelope envelope = new Messaging.InboundEnvelope();

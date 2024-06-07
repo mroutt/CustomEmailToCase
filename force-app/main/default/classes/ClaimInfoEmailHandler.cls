@@ -27,7 +27,6 @@
             theCase = cases.get(0);
         }
 
-        //TODO: Link this email and all files to the Case
         attachEmailToCase(email, theCase.Id);
 
         linkEmailAttachmentsToCase(email, theCase.Id);
@@ -68,6 +67,10 @@
 
     private static void linkEmailAttachmentsToCase(Messaging.InboundEmail email, Id caseId) {
 
+        //TODO: Creating the Content Document/Version/Link records one at a time like this
+        //TODO: is inefficient. I will need to come back and put these into collections and 
+        //TODO: Maps to insert them in batch and also track the relationships.
+
         if(email.binaryAttachments == null)
             return;
 
@@ -75,8 +78,6 @@
 
         for(Messaging.InboundEmail.BinaryAttachment attachment : attachments) {
 
-            //TODO: Create Content Version for each email file attachment
-            //TODO: Create Content Document Link to the provided CaseId, ContentDocumentLink.LinkedEntityId = CaseId
             ContentVersion content = new ContentVersion(
                                         Title = attachment.fileName,
                                         PathOnClient = attachment.fileName,
@@ -90,7 +91,6 @@
 
             insert link;
         }
-
         
     }
 

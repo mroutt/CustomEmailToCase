@@ -51,6 +51,28 @@ private class ClaimInfoEmailHandlerTests {
         Assert.areEqual(claimNumber, theCase.ClaimNumber__c);
     }
 
+    @isTest
+    static void canLinkEmailToCase() {
+
+        String claimNumber = '99893345';
+        String subject = 'Accident report for Claim number ' + claimNumber;
+
+        Messaging.InboundEmail email = new Messaging.InboundEmail();
+        Messaging.InboundEnvelope envelope = new Messaging.InboundEnvelope();
+
+        email.subject = subject;
+
+        ClaimInfoEmailHandler handler = new ClaimInfoEmailHandler();
+
+        handler.handleInboundEmail(email, envelope);
+
+        Case theCase = [SELECT Id FROM Case].get(0);
+
+        List<EmailMessage> messages = [SELECT Id FROM EmailMessage WHERE ParentId = :theCase.Id];
+
+        Assert.areEqual(1, messages.size());
+    }
+
     private static Messaging.InboundEmail.BinaryAttachment[] createBinaryAttachments() {
 
         Messaging.InboundEmail.BinaryAttachment attachment = new Messaging.InboundEmail.BinaryAttachment();

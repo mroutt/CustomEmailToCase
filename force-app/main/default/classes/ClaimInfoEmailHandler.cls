@@ -57,7 +57,13 @@
 
     private static void attachEmailToCase(Messaging.InboundEmail email, Id caseId) {
 
+        EmailMessage message = new EmailMessage();
+        message.ParentId = caseId;
+        message.FromAddress = email.fromAddress;
+        message.HtmlBody = email.htmlBody;
+        message.Subject = email.subject;
 
+        insert message;
     }
 
     private static void linkEmailAttachmentsToCase(Messaging.InboundEmail email, Id caseId) {

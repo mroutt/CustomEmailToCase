@@ -2,19 +2,26 @@
   public with sharing class ClaimInfoEmailHandler implements Messaging.InboundEmailHandler {
     
     public Messaging.InboundEmailResult handleInboundEmail(Messaging.InboundEmail email, Messaging.InboundEnvelope envelope) {
-        
+
+        //TODO: Make sure all of this logic happens in a transaction
+        //TODO: Add exception handling to this logic
+
         Messaging.InboundEmailResult result = new Messaging.InboundEmailresult();
         
         String claimNumber = getClaimNumberFromSubject(email.subject);
 
-        //TODO: If there is no Claim Number found, reply to the sender to tell them that they need a Claim number
-        if(claimNumber == null)
+        //If there is no Claim Number found, reply to the sender and tell them that they need a Claim number
+        if(claimNumber == null) {
+
+            result.message = 'Could not locate the 8-digit claim number in the email subject';
+            result.success = false;
             return result;
+        }
 
         //Look up the Case by the Claim Number custom field
         List<Case> cases = [SELECT Id FROM Case WHERE ClaimNumber__c = :claimNumber];
 
-        Case theCase = new Case();
+        Case theCase;
 
         //If a Case does not exist for this Claim Number, create a new Case
         if(cases.size() == 0) {
@@ -31,8 +38,7 @@
 
         linkEmailAttachmentsToCase(email, theCase.Id);
 
-        //TODO: Reply with a confirmation email to the sender 
-
+        result.success = true;
         return result;
     }
 
@@ -74,6 +80,7 @@
         if(email.binaryAttachments == null)
             return;
 
+        // TODO: Add support for text attachments
         Messaging.InboundEmail.BinaryAttachment[] attachments = email.binaryAttachments;
 
         for(Messaging.InboundEmail.BinaryAttachment attachment : attachments) {
@@ -93,17 +100,4 @@
         }
         
     }
-
-    private void sendNoClaimNumberFoundEmail(String emailAddress) {
-
-        Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
-
-        message.toAddresses = new String[] { emailAddress };
-        message.subject = 'Opt Out Test Message';
-        message.plainTextBody = 'This is the message body.';
-
-        Messaging.SingleEmailMessage[] messages = new List<Messaging.SingleEmailMessage> {message};
-        Messaging.SendEmailResult[] results = Messaging.sendEmail(messages);    
-    }
-
 }

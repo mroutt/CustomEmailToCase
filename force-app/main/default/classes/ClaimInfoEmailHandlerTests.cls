@@ -52,6 +52,28 @@ private class ClaimInfoEmailHandlerTests {
     }
 
     @isTest
+    static void noClaimNumberInSubjectReturnsFailure() {
+
+        String errorMessage = 'Could not locate the 8-digit claim number in the email subject';
+        String subject = 'No claim number subject';
+
+        Messaging.InboundEmail email = new Messaging.InboundEmail();
+        Messaging.InboundEnvelope envelope = new Messaging.InboundEnvelope();
+
+        email.subject = subject;
+
+        ClaimInfoEmailHandler handler = new ClaimInfoEmailHandler();
+
+        Messaging.InboundEmailResult result = handler.handleInboundEmail(email, envelope);
+
+        List<Case> cases = [SELECT Id, ClaimNumber__c FROM Case];
+
+        Assert.areEqual(0, cases.size());
+        Assert.isFalse(result.success);
+        Assert.areEqual(errorMessage, result.message);
+    }
+
+    @isTest
     static void canLinkEmailToCase() {
 
         String claimNumber = '99893345';
@@ -72,6 +94,9 @@ private class ClaimInfoEmailHandlerTests {
 
         Assert.areEqual(1, messages.size());
     }
+
+    //TODO: Write a test for handling a large number of email attachments. 
+    //TODO: This will be how we validate the logic that creates the Content Version/Document/Link records
 
     private static Messaging.InboundEmail.BinaryAttachment[] createBinaryAttachments() {
 

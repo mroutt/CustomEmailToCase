@@ -10,7 +10,7 @@ private class ClaimInfoEmailHandlerTests {
         Messaging.InboundEnvelope envelope = new Messaging.InboundEnvelope();
 
         email.subject = subject;
-        email.binaryAttachments = createBinaryAttachments();
+        email.binaryAttachments = createBinaryAttachments(1);
 
         ClaimInfoEmailHandler handler = new ClaimInfoEmailHandler();
 
@@ -95,18 +95,47 @@ private class ClaimInfoEmailHandlerTests {
         Assert.areEqual(1, messages.size());
     }
 
-    //TODO: Write a test for handling a large number of email attachments. 
-    //TODO: This will be how we validate the logic that creates the Content Version/Document/Link records
+    @isTest 
+    static void canHandleManyFileAttachments() {
 
-    private static Messaging.InboundEmail.BinaryAttachment[] createBinaryAttachments() {
+        String subject = 'canLinkToCaseTest 88888888';
+        
+        Messaging.InboundEmail email = new Messaging.InboundEmail();
+        Messaging.InboundEnvelope envelope = new Messaging.InboundEnvelope();
 
-        Messaging.InboundEmail.BinaryAttachment attachment = new Messaging.InboundEmail.BinaryAttachment();
+        email.subject = subject;
+        email.binaryAttachments = createBinaryAttachments(100);
 
-        attachment.body = blob.valueOf('Some test text for the file');
-        attachment.fileName = 'testAttachment.txt';
-        attachment.mimeTypeSubType = 'text/plain';
+        ClaimInfoEmailHandler handler = new ClaimInfoEmailHandler();
 
-        Messaging.inboundEmail.BinaryAttachment[] attachments = new Messaging.inboundEmail.BinaryAttachment[] { attachment };
+        handler.handleInboundEmail(email, envelope);
+
+        List<Case> cases = [SELECT Id FROM Case];
+
+        Assert.areEqual(1, cases.size());
+
+        Case theCase = cases.get(0);
+
+        List<ContentDocumentLink> links = [SELECT Id FROM ContentDocumentLink WHERE LinkedEntityId = : theCase.Id];
+
+        Assert.areEqual(100, links.size());
+    }
+
+    private static List<Messaging.InboundEmail.BinaryAttachment> createBinaryAttachments(Integer numberOfAttachments) {
+
+        List<Messaging.InboundEmail.BinaryAttachment> attachments = new List<Messaging.InboundEmail.BinaryAttachment>();
+
+        for(Integer i = 0; i < numberOfAttachments; i++) {
+            
+            Messaging.InboundEmail.BinaryAttachment attachment = new Messaging.InboundEmail.BinaryAttachment();
+
+            attachment.body = blob.valueOf('Some test text for the file');
+            attachment.fileName = 'testAttachment.txt';
+            attachment.mimeTypeSubType = 'text/plain';
+            
+            attachments.add(attachment);
+        }
+
         return attachments;
     }
 }

@@ -3,9 +3,6 @@
     
     public Messaging.InboundEmailResult handleInboundEmail(Messaging.InboundEmail email, Messaging.InboundEnvelope envelope) {
 
-        //TODO: Make sure all of this logic happens in a transaction
-        //TODO: Add exception handling to this logic
-
         Messaging.InboundEmailResult result = new Messaging.InboundEmailresult();
         
         String claimNumber = getClaimNumberFromSubject(email.subject);
@@ -73,15 +70,13 @@
 
     private static void linkEmailAttachmentsToCase(Messaging.InboundEmail email, Id caseId) {
 
-        //TODO: Creating the Content Document/Version/Link records one at a time like this
-        //TODO: is inefficient. I will need to come back and put these into collections and 
-        //TODO: Maps to insert them in batch and also track the relationships.
-
         if(email.binaryAttachments == null)
             return;
 
         // TODO: Add support for text attachments
         Messaging.InboundEmail.BinaryAttachment[] attachments = email.binaryAttachments;
+
+        List<ContentVersion> contentVersions = new List<ContentVersion>();
 
         for(Messaging.InboundEmail.BinaryAttachment attachment : attachments) {
 
@@ -90,14 +85,29 @@
                                         PathOnClient = attachment.fileName,
                                         VersionData = attachment.Body);
 
-            insert content;
-
-            ContentVersion contentWithDocument = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :content.Id];
-
-            ContentDocumentLink link = new ContentDocumentLink( ContentDocumentId = contentWithDocument.ContentDocumentId, LinkedEntityId = caseId );
-
-            insert link;
+            contentVersions.add(content);
         }
+
+        insert contentVersions;
+
+        // Here we pass our newly created Content Version list to the Map constructor.
+        // This allows us to extract the new ids into a Set.
+        // We can then use that Set of Ids in a SOQL WHERE IN clause to get the list of ContentDocument records that 
+        // we need to link to the Case
+        Map<Id, ContentVersion> contentVersionMap = new Map<Id,ContentVersion>(contentVersions);
+        Set<Id> newContentVersionIds = contentVersionMap.keySet();
+
+        List<ContentVersion> contentVersionsWithDocumentIds = [SELECT ContentDocumentId FROM ContentVersion WHERE Id IN :newContentVersionIds];
+
+        List<ContentDocumentLink> documentLinks = new List<ContentDocumentLink>();
+
+        for(ContentVersion contentVersionWithDocumentId : contentVersionsWithDocumentIds) {
+
+            ContentDocumentLink link = new ContentDocumentLink( ContentDocumentId = contentVersionWithDocumentId.ContentDocumentId, LinkedEntityId = caseId );
+            documentLinks.add(link);
+        }
+        
+        insert documentLinks;
         
     }
 }
